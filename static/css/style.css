@@ -1,0 +1,36 @@
+body {
+    background: #f8f9fa;
+    font-family: 'Segoe UI', sans-serif;
+    margin: 0;
+    padding: 0;
+    color: #343a40;
+}
+
+h1 {
+    color: #343a40;
+    font-size: 36px;
+    margin-bottom: 20px;
+}
+
+img {
+    max-width: 600px;
+    width: 60%;
+    height: auto;
+    margin-bottom: 20px;
+    border-radius: 8px;
+}
+
+.btn {
+    padding: 12px 30px;
+    font-size: 18px;
+    background-color: #8e735b;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+.btn:hover {
+    background-color: #6d4f3d;
+    cursor: pointer;
+}
