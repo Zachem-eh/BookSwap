@@ -4,6 +4,9 @@ from wtforms import StringField, PasswordField, SubmitField
 from wtforms.fields.simple import EmailField, BooleanField
 from wtforms.validators import DataRequired
 from werkzeug.utils import redirect
+from data import db_session
+from data.books import Book
+from data.users import User
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yandexlyceum'
@@ -49,4 +52,5 @@ def register():
 
 
 if __name__ == '__main__':
+    db_session.global_init('database/book_swap.db')
     app.run(host='127.0.0.1', port=8080)
