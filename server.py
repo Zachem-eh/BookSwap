@@ -38,15 +38,15 @@ def home():
 def register():
     form = RegisterForm()
     if form.validate_on_submit():
-        # sess = db_session.create_session()
-        # user = User()
-        # user.email = form.email.data
-        # user.password = form.password.data
-        # user.surname = form.surname.data
-        # user.name = form.name.data
-        # user.age = int(form.age.data)
-        # sess.add(user)
-        # sess.commit()
+        sess = db_session.create_session()
+        user = User()
+        user.email = form.email.data
+        user.password = form.password.data
+        user.surname = form.surname.data
+        user.name = form.name.data
+        user.age = int(form.age.data)
+        sess.add(user)
+        sess.commit()
         return redirect('/')
     return render_template('register.html', form=form)
 
