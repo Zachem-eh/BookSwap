@@ -1,6 +1,6 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField
+from wtforms import StringField, PasswordField, SubmitField, IntegerField
 from wtforms.fields.simple import EmailField, BooleanField
 from wtforms.validators import DataRequired
 from werkzeug.utils import redirect
@@ -39,6 +39,33 @@ class LoginForm(FlaskForm):
     submit = SubmitField('Войти')
 
 
+from flask_wtf import FlaskForm
+from wtforms import StringField, IntegerField, SelectField, SubmitField
+from wtforms.validators import DataRequired
+
+class BookForm(FlaskForm):
+    title = StringField('Название', validators=[DataRequired()])
+    author = StringField('Автор', validators=[DataRequired()])
+    genre = SelectField('Жанр', choices=[
+        ('Фэнтези', 'Фэнтези'),
+        ('Научная фантастика', 'Научная фантастика'),
+        ('Детектив', 'Детектив'),
+        ('Роман', 'Роман'),
+        ('Приключения', 'Приключения'),
+        ('Ужасы', 'Ужасы'),
+        ('Биография', 'Биография'),
+        ('История', 'История')
+    ], validators=[DataRequired()])
+    age = SelectField('Возрастное ограничение', choices=[
+        ('0+', '0+'),
+        ('6+', '6+'),
+        ('12+', '12+'),
+        ('16+', '16+'),
+        ('18+', '18+')
+    ], validators=[DataRequired()])
+    submit = SubmitField('Добавить книгу')
+
+
 @app.route('/')
 def home():
     return render_template('index.html')
@@ -57,7 +84,7 @@ def register():
         user.age = int(form.age.data)
         sess.add(user)
         sess.commit()
-        return redirect('/')
+        return redirect('/books')
     return render_template('register.html', form=form)
 
 
@@ -69,7 +96,7 @@ def login():
         user = db_sess.query(User).filter(User.email == form.email.data).first()
         if user and user.check_password(form.password.data):
             login_user(user, remember=form.remember_me.data)
-            return redirect("/")
+            return redirect("/books")
         return render_template('login.html',
                                message="Неправильный логин или пароль",
                                form=form)
@@ -81,6 +108,42 @@ def login():
 def logout():
     logout_user()
     return redirect("/")
+
+
+@app.route('/books')
+@login_required
+def books():
+    db_sess = db_session.create_session()
+    genre_filter = request.args.get('genre')
+
+    if genre_filter:
+        all_books = db_sess.query(Book).filter(Book.genre == genre_filter).all()
+    else:
+        all_books = db_sess.query(Book).all()
+
+    genres = db_sess.query(Book.genre).distinct().all()
+    genres = [g[0] for g in genres]
+
+    return render_template('books.html', books=all_books, genres=genres, selected_genre=genre_filter)
+
+
+@app.route('/add_book', methods=['GET', 'POST'])
+@login_required
+def add_book():
+    form = BookForm()
+    if form.validate_on_submit():
+        db_sess = db_session.create_session()
+        book = Book(
+            title=form.title.data,
+            author=form.author.data,
+            genre=form.genre.data,
+            age=form.age.data,
+            user=current_user
+        )
+        db_sess.add(book)
+        db_sess.commit()
+        return redirect('/books')
+    return render_template('add_book.html', form=form)
 
 
 if __name__ == '__main__':
