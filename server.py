@@ -80,7 +80,7 @@ def register():
         user.age = int(form.age.data)
         sess.add(user)
         sess.commit()
-        return redirect('/books')
+        return redirect('/login')
     return render_template('register.html', form=form)
 
 
@@ -112,7 +112,7 @@ def add_book():
             author=form.author.data,
             genre=form.genre.data,
             age=form.age.data,
-            user=current_user
+            holder=current_user.id
         )
         db_sess.add(book)
         db_sess.commit()
