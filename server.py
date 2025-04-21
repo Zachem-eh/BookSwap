@@ -1,6 +1,6 @@
 from flask import Flask, render_template
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField
+from wtforms import StringField, PasswordField, SubmitField, SelectField
 from wtforms.fields.simple import EmailField, BooleanField
 from wtforms.validators import DataRequired
 from werkzeug.utils import redirect
@@ -37,6 +37,28 @@ class LoginForm(FlaskForm):
     password = PasswordField('Пароль', validators=[DataRequired()])
     remember_me = BooleanField('Запомнить меня')
     submit = SubmitField('Войти')
+
+class BookForm(FlaskForm):
+    title = StringField('Название', validators=[DataRequired()])
+    author = StringField('Автор', validators=[DataRequired()])
+    genre = SelectField('Жанр', choices=[
+        ('Фэнтези', 'Фэнтези'),
+        ('Научная фантастика', 'Научная фантастика'),
+        ('Детектив', 'Детектив'),
+        ('Роман', 'Роман'),
+        ('Приключения', 'Приключения'),
+        ('Ужасы', 'Ужасы'),
+        ('Биография', 'Биография'),
+        ('История', 'История')
+    ], validators=[DataRequired()])
+    age = SelectField('Возрастное ограничение', choices=[
+        ('0+', '0+'),
+        ('6+', '6+'),
+        ('12+', '12+'),
+        ('16+', '16+'),
+        ('18+', '18+')
+    ], validators=[DataRequired()])
+    submit = SubmitField('Добавить книгу')
 
 
 @app.route('/')
