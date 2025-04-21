@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, SelectField
 from wtforms.fields.simple import EmailField, BooleanField
@@ -37,6 +37,7 @@ class LoginForm(FlaskForm):
     password = PasswordField('Пароль', validators=[DataRequired()])
     remember_me = BooleanField('Запомнить меня')
     submit = SubmitField('Войти')
+
 
 class BookForm(FlaskForm):
     title = StringField('Название', validators=[DataRequired()])
@@ -79,8 +80,44 @@ def register():
         user.age = int(form.age.data)
         sess.add(user)
         sess.commit()
-        return redirect('/')
+        return redirect('/books')
     return render_template('register.html', form=form)
+
+
+@app.route('/books')
+@login_required
+def books():
+    db_sess = db_session.create_session()
+    genre_filter = request.args.get('genre')
+
+    if genre_filter:
+        all_books = db_sess.query(Book).filter(Book.genre == genre_filter).all()
+    else:
+        all_books = db_sess.query(Book).all()
+
+    genres = db_sess.query(Book.genre).distinct().all()
+    genres = [g[0] for g in genres]
+
+    return render_template('books.html', books=all_books, genres=genres, selected_genre=genre_filter)
+
+
+@app.route('/add_book', methods=['GET', 'POST'])
+@login_required
+def add_book():
+    form = BookForm()
+    if form.validate_on_submit():
+        db_sess = db_session.create_session()
+        book = Book(
+            title=form.title.data,
+            author=form.author.data,
+            genre=form.genre.data,
+            age=form.age.data,
+            user=current_user
+        )
+        db_sess.add(book)
+        db_sess.commit()
+        return redirect('/books')
+    return render_template('add_book.html', form=form)
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -91,7 +128,7 @@ def login():
         user = db_sess.query(User).filter(User.email == form.email.data).first()
         if user and user.check_password(form.password.data):
             login_user(user, remember=form.remember_me.data)
-            return redirect("/")
+            return redirect("/books")
         return render_template('login.html',
                                message="Неправильный логин или пароль",
                                form=form)
