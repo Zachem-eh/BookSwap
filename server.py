@@ -142,6 +142,14 @@ def logout():
     return redirect("/")
 
 
+@app.route('/profile')
+@login_required
+def profile():
+    sess = db_session.create_session()
+    curr_books = sess.query(Book).filter(Book.holder == current_user.id).all()
+    return render_template('profile.html', books=curr_books)
+
+
 if __name__ == '__main__':
     db_session.global_init('database/book_swap.db')
     app.run(host='127.0.0.1', port=8080)
