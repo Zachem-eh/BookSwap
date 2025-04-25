@@ -4,7 +4,7 @@
     <h2 class="text-center mb-5"> {{ current_user.surname }} {{ current_user.name }}</h2>
     <h3 class="text-center mb-5">Ваши книги:</h3>
     {% for curr_book in books %}
-            <a class="text-decoration-none" href="/book/{{curr_book.id}}">
+            <a class="text-decoration-none" href="/book/{{ curr_book.id }}">
             <div class="col-md-6 col-lg-4 mb-4">
                 <div class="card h-100 shadow-sm">
                     <div class="card-body">
