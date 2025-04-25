@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, SelectField
+from wtforms import StringField, PasswordField, SubmitField, SelectField, FileField
 from wtforms.fields.simple import EmailField, BooleanField
 from wtforms.validators import DataRequired
 from werkzeug.utils import redirect
@@ -8,6 +8,8 @@ from data import db_session
 from data.books import Book
 from data.users import User
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
+from werkzeug.utils import secure_filename
+import os
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yandexlyceum'
@@ -59,6 +61,9 @@ class BookForm(FlaskForm):
         ('16+', '16+'),
         ('18+', '18+')
     ], validators=[DataRequired()])
+    cover = FileField('Выберите изображение',
+                     validators=[DataRequired()],
+                     render_kw={'accept': 'image/*'})
     submit = SubmitField('Добавить книгу')
 
 
@@ -107,12 +112,17 @@ def add_book():
     form = BookForm()
     if form.validate_on_submit():
         db_sess = db_session.create_session()
+        file = form.cover.data
+        filename = secure_filename(file.filename)
+        save_path = os.path.join('static/images', filename)
+        file.save(save_path)
         book = Book(
             title=form.title.data,
             author=form.author.data,
             genre=form.genre.data,
             age=form.age.data,
-            holder=current_user.id
+            holder=current_user.id,
+            cover=f'images/{filename}'
         )
         db_sess.add(book)
         db_sess.commit()
