@@ -142,6 +142,13 @@ def logout():
     return redirect("/")
 
 
+@app.route('/book/<int:id_book>')
+def book(id_book):
+    sess = db_session.create_session()
+    right_book = sess.query(Book).filter(Book.id == id_book).first()
+    return render_template('book.html', book=right_book)
+
+
 @app.route('/profile')
 @login_required
 def profile():
