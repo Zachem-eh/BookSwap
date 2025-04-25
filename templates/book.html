@@ -1,5 +1,14 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <p>{{ book.title }}</p>
+    <h2>Название:</h2>
+    <h3 class="fw-normal">{{ book.title }}</h3>
+    <h2>Автор:</h2>
+    <h3 class="fw-normal">{{ book.author }}</h3>
+    <h2>Жанр:</h2>
+    <h3 class="fw-normal">{{ book.genre }}</h3>
+    <h2>Возраст книги:</h2>
+    <h3 class="fw-normal">{{ book.age }}</h3>
+    <h2>Пользователь, хранящий книгу:</h2>
+    <h3 class="fw-normal">{{ book.user.surname }} {{ book.user.name }}</h3>
 {% endblock %}
