@@ -1,25 +1,63 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <div class="position-relative min-vh-100">
-    <div class="position-absolute top-50 start-50 translate-middle w-100">
-        <div class="row align-items-center">
-            <div class="col-md-6">
-                <h2>Название:</h2>
-                <h3 class="fw-normal">{{ book.title }}</h3>
-                <h2>Автор:</h2>
-                <h3 class="fw-normal">{{ book.author }}</h3>
-                <h2>Жанр:</h2>
-                <h3 class="fw-normal">{{ book.genre }}</h3>
-                <h2>Возрастное ограничение:</h2>
-                <h3 class="fw-normal">{{ book.age }}</h3>
-                <h2>Пользователь, хранящий книгу:</h2>
-                <h3 class="fw-normal">{{ book.user.surname }} {{ book.user.name }}</h3>
-            </div>
-            <div class="col-md-6">
-                <img class="rounded" height="500" src="{{ url_for('static', filename=book.cover) }}">
+<div class="container py-5">
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <img src="{{ url_for('static', filename=book.cover) }}"
+                 class="img-fluid rounded shadow"
+                 alt="{{ book.title }}">
+        </div>
+        
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="card-title">{{ book.title }}</h2>
+                    <h4 class="card-subtitle mb-3 text-muted">{{ book.author }}</h4>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <p><strong>Жанр:</strong> {{ book.genre }}</p>
+                            <p><strong>Возрастное ограничение:</strong> {{ book.age }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            {% if book.user %}
+                            <div class="contact-card bg-light p-3 rounded">
+                                <h5>Контакт владельца:</h5>
+                                <p class="mb-1"><i class="bi bi-envelope"></i> {{ book.user.email }}</p>
+                                <small class="text-muted">Для предложений об обмене</small>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex gap-2 mt-4">
+                        <a href="{{ url_for('books') }}" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left"></i> Назад
+                        </a>
+
+                        {% if current_user.is_authenticated and current_user.id == book.holder %}
+                        <form action="{{ url_for('delete_book', book_id=book.id) }}" method="POST">
+                            <button type="submit" class="btn btn-danger"
+                                    onclick="return confirm('Вы уверены, что хотите удалить эту книгу?')">
+                                <i class="bi bi-trash"></i> Удалить
+                            </button>
+                        </form>
+                        {% endif %}
+                    </div>
+                </div>
             </div>
         </div>
     </div>
-    </div>
+</div>
+
+<style>
+    .contact-card {
+        border-left: 3px solid #4a76a8;
+    }
+    .img-fluid {
+        max-height: 500px;
+        object-fit: contain;
+    }
+</style>
 {% endblock %}
