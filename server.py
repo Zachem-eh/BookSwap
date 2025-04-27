@@ -1,6 +1,6 @@
 from flask import Flask, render_template, request
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField, SelectField, FileField
+from wtforms import StringField, PasswordField, SubmitField, SelectField, FileField, IntegerField
 from wtforms.fields.simple import EmailField, BooleanField
 from wtforms.validators import DataRequired
 from werkzeug.utils import redirect
@@ -30,7 +30,7 @@ class RegisterForm(FlaskForm):
     repeat_password = PasswordField('Подтвердите пароль')
     surname = StringField('Фамилия')
     name = StringField('Имя')
-    age = StringField('Возраст')
+    age = IntegerField('Возраст')
     submit = SubmitField('Зарегистрироваться')
 
 
@@ -77,12 +77,18 @@ def register():
     form = RegisterForm()
     if form.validate_on_submit():
         sess = db_session.create_session()
+
+        if sess.query(User).filter(User.email == form.email.data).first():
+            return render_template('register.html',
+                                   form=form,
+                                   message="Этот email уже зарегистрирован")
+
         user = User()
         user.email = form.email.data
         user.password = form.password.data
         user.surname = form.surname.data
         user.name = form.name.data
-        user.age = int(form.age.data)
+        user.age = form.age.data
         sess.add(user)
         sess.commit()
         return redirect('/login')

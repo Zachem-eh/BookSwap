@@ -2,6 +2,11 @@
 {% block content %}
 <div class="container mt-5">
 <h2>Регистрация</h2>
+    {% if message %}
+    <div class="alert alert-danger" role="alert">
+        {{ message }}
+    </div>
+    {% endif %}
     <form action="register" method="post">
     {{ form.hidden_tag() }}
     <p>
