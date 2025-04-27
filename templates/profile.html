@@ -11,7 +11,8 @@
                         <h5 class="card-title">{{ curr_book.title }}</h5>
                         <h6 class="card-subtitle mb-2 text-muted">{{ curr_book.author }}</h6>
                         <p class="card-text">Жанр: {{ curr_book.genre }}</p>
-                        <p class="card-text">Возраст: {{ curr_book.age }}</p>
+                        <p class="card-text">Ограничение: {{ curr_book.age }}</p>
+                        <img width="200" src="{{ url_for('static', filename=curr_book.cover) }}">
                     </div>
                 </div>
             </div>
