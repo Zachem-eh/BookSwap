@@ -173,6 +173,24 @@ def profile():
     return render_template('profile.html', books=curr_books)
 
 
+@app.route('/delete_book/<int:book_id>', methods=['POST'])
+@login_required
+def delete_book(book_id):
+    db_sess = db_session.create_session()
+    book = db_sess.query(Book).filter(Book.id == book_id, Book.holder == current_user.id).first()
+    if book:
+        if book.cover and os.path.exists(os.path.join('static', book.cover)):
+            os.remove(os.path.join('static', book.cover))
+
+        db_sess.delete(book)
+        db_sess.commit()
+        flash('Книга успешно удалена', 'success')
+    else:
+        flash('Книга не найдена или у вас нет прав на её удаление', 'danger')
+
+    return redirect(url_for('profile'))
+
+
 if __name__ == '__main__':
     db_session.global_init('database/book_swap.db')
     app.run(host='127.0.0.1', port=8080)
