@@ -17,7 +17,7 @@ class User(SqlAlchemyBase, UserMixin, SerializerMixin):
     password = sqlalchemy.Column(sqlalchemy.String, nullable=False)
     modified_date = sqlalchemy.Column(sqlalchemy.DateTime, nullable=False, default=datetime.datetime.now)
     books = sqlalchemy.Column(sqlalchemy.String)
-    book = orm.relationship('Book', back_populates='user')
+    book = orm.relationship('Book', foreign_keys='Book.holder', back_populates='user')
 
     def set_password(self, password):
         self.password = generate_password_hash(password)

@@ -7,6 +7,7 @@ from werkzeug.utils import redirect
 from data import db_session
 from data.books import Book
 from data.users import User
+from data.relationships import Relationship
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from werkzeug.utils import secure_filename
 import os
@@ -131,7 +132,13 @@ def add_book():
             cover=f'images/{filename}'
         )
         db_sess.add(book)
+        user = db_sess.query(User).filter(User.id == current_user.id).first()
+        if not user.books:
+            user.books = str(book.id)
+        else:
+            user.books += f', {book.id}'
         db_sess.commit()
+
         return redirect('/books')
     return render_template('add_book.html', form=form)
 
@@ -189,6 +196,21 @@ def delete_book(book_id):
         flash('Книга не найдена или у вас нет прав на её удаление', 'danger')
 
     return redirect(url_for('profile'))
+
+
+@app.route('/take_book/<int:book_id>', methods=['POST'])
+@login_required
+def take_book(book_id):
+    sess = db_session.create_session()
+    taken_book = sess.query(Book).filter(Book.id == book_id).first()
+    holder = taken_book.holder
+    relationship = Relationship()
+    relationship.holder = holder
+    relationship.book = taken_book.id
+    relationship.taker = current_user.id
+    sess.add(relationship)
+    sess.commit()
+    return redirect(f'/book/{book_id}')
 
 
 if __name__ == '__main__':
