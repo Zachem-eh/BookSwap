@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h3 class="text-center mb-5">Запросы на ваши книги:</h3>
+    {% if flag_rl %}
+    <div class="row">
+            {% for taker in takers %}
+                <h3 class="mb-3">Запросы пользователя "{{ taker.name }} {{ taker.surname }}" ({{ taker.email }}):</h3>
+                {% for curr_book in takers[taker] %}
+                <div class="col-md-6 col-lg-4 mb-5">
+                    <a class="text-decoration-none" href="/book/{{ curr_book.id }}">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-body">
+                            <div class="row mb-3">
+                                <div class="col-md-5">
+                                <h5 class="card-title">{{ curr_book.title }}</h5>
+                                <h6 class="card-subtitle mb-2 text-muted">{{ curr_book.author }}</h6>
+                                <p class="card-text">Жанр: {{ curr_book.genre }}</p>
+                                <p class="card-text">Ограничение: {{ curr_book.age }}</p>
+                                </div>
+                                <div class="col-md-6 text-end">
+                                <img class="img-fluid rounded" width="200" src="{{ url_for('static', filename=curr_book.cover) }}">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col text-center">
+                                    <form action="{{ url_for('replace_book', book_id=curr_book.id, taker_id=taker.id) }}" method="POST" class="d-inline">
+                                    <button type="submit" class="btn btn-success"
+                                        onclick="return confirm('Вы уверены, что хотите отдать эту книгу?')">
+                                    <i class="bi bi-trash"></i> Согласиться
+                                    </button>
+                                    </form>
+                                </div>
+                                <div class="col text-center">
+                                    <form action="{{ url_for('refuse_book', book_id=curr_book.id, taker_id=taker.id) }}" method="POST" class="d-inline">
+                                    <button type="submit" class="btn btn-danger"
+                                        onclick="return confirm('Вы уверены, что НЕ хотите отдавать эту книгу?')">
+                                    <i class="bi bi-trash"></i> Отказать
+                                    </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    </a>
+                </div>
+                {% endfor %}
+            {% endfor %}
+    </div>
+    {% else %}
+        <h4 class="text-center">У вас нет запросов!</h4>
+    {% endif %}
+    <div class="row">
+        <div class="col">
+            <a href="/profile" class="btn btn-outline-danger mt-4">Назад</a>
+        </div>
+    </div>
+{% endblock %}
