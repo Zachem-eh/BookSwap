@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, flash, url_for
+from flask import Flask, render_template, request, flash, url_for, jsonify
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, SelectField, FileField, IntegerField
 from wtforms.fields.simple import EmailField, BooleanField
@@ -189,6 +189,95 @@ def delete_book(book_id):
         flash('Книга не найдена или у вас нет прав на её удаление', 'danger')
 
     return redirect(url_for('profile'))
+
+
+@app.route('/api/books', methods=['GET'])
+@login_required
+def api_get_books():
+    db_sess = db_session.create_session()
+
+    genre = request.args.get('genre')
+    author = request.args.get('author')
+
+    query = db_sess.query(Book).filter(Book.holder != current_user.id)
+
+    if genre:
+        query = query.filter(Book.genre == genre)
+    if author:
+        query = query.filter(Book.author.ilike(f'%{author}%'))
+
+    books = query.all()
+
+    result = []
+    for book in books:
+        owner = db_sess.query(User).get(book.holder)
+        result.append({
+            'id': book.id,
+            'title': book.title,
+            'author': book.author,
+            'genre': book.genre,
+            'age_rating': book.age,
+            'cover_url': url_for('static', filename=book.cover, _external=True),
+            'owner': {
+                'email': owner.email,
+                'name': f'{owner.name} {owner.surname}'
+            },
+            'added_date': book.created_date.isoformat() if book.created_date else None
+        })
+
+    return jsonify({'books': result})
+
+
+@app.route('/api/books/<int:book_id>', methods=['GET'])
+@login_required
+def api_get_book(book_id):
+    db_sess = db_session.create_session()
+    book = db_sess.query(Book).get(book_id)
+
+    if not book:
+        return jsonify({'error': 'Book not found'}), 404
+
+    owner = db_sess.query(User).get(book.holder)
+
+    return jsonify({
+        'book': {
+            'id': book.id,
+            'title': book.title,
+            'author': book.author,
+            'genre': book.genre,
+            'cover_url': url_for('static', filename=book.cover, _external=True),
+            'owner': {
+                'email': owner.email,
+                'name': f'{owner.name} {owner.surname}'
+            }
+        }
+    })
+
+
+@app.route('/api/books/search', methods=['GET'])
+@login_required
+def api_search_books():
+    db_sess = db_session.create_session()
+    search_term = request.args.get('q')
+
+    if not search_term:
+        return jsonify({'error': 'Search term is required'}), 400
+
+    books = db_sess.query(Book).filter(
+        Book.holder != current_user.id,
+        (Book.title.ilike(f'%{search_term}%') |
+         (Book.author.ilike(f'%{search_term}%'))
+         ).limit(20).all())
+
+    return jsonify({
+        'books': [{
+            'id': book.id,
+            'title': book.title,
+            'author': book.author,
+            'genre': book.genre,
+            'cover_url': url_for('static', filename=book.cover, _external=True)
+        } for book in books]
+    })
 
 
 if __name__ == '__main__':
