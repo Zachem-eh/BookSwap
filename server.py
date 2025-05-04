@@ -198,6 +198,9 @@ def delete_book(book_id):
     db_sess = db_session.create_session()
     try:
         book = db_sess.query(Book).filter(Book.id == book_id, Book.holder == current_user.id).first()
+        rels = db_sess.query(Relationship).filter(Relationship.book == book_id).all()
+        for rel in rels:
+            db_sess.delete(rel)
         if book:
             if book.cover and os.path.exists(os.path.join('static', book.cover)):
                 os.remove(os.path.join('static', book.cover))
@@ -292,7 +295,7 @@ def replace_book(book_id, taker_id):
 def refuse_book(book_id, taker_id):
     sess = db_session.create_session()
     try:
-        rels = sess.query(Relationship).filter(Relationship.taker == taker_id and Relationship.book == book_id)
+        rels = sess.query(Relationship).filter(Relationship.taker == taker_id, Relationship.book == book_id)
         for rel in rels:
             sess.delete(rel)
         sess.commit()
