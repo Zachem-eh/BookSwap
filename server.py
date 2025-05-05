@@ -221,8 +221,7 @@ def api_get_books():
             'owner': {
                 'email': owner.email,
                 'name': f'{owner.name} {owner.surname}'
-            },
-            'added_date': book.created_date.isoformat() if book.created_date else None
+            }
         })
 
     return jsonify({'books': result})
