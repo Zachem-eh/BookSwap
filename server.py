@@ -102,17 +102,17 @@ def register():
 @login_required
 def books():
     db_sess = db_session.create_session()
-    genre_filter = request.args.get('genre')
+    try:
+        genre_filter = request.args.get('genre')
 
-    if genre_filter:
-        all_books = db_sess.query(Book).filter(Book.genre == genre_filter).all()
-    else:
-        all_books = db_sess.query(Book).all()
+        if genre_filter:
+            all_books = db_sess.query(Book).filter(Book.genre == genre_filter).all()
+        else:
+            all_books = db_sess.query(Book).all()
 
-    genres = db_sess.query(Book.genre).distinct().all()
-    genres = [g[0] for g in genres]
-
-    return render_template('books.html', books=all_books, genres=genres, selected_genre=genre_filter)
+        genres = db_sess.query(Book.genre).distinct().all()
+        genres = [g[0] for g in genres]
+        return render_template('books.html', books=all_books, genres=genres, selected_genre=genre_filter)
     finally:
         db_sess.close()
 
@@ -123,21 +123,30 @@ def add_book():
     form = BookForm()
     if form.validate_on_submit():
         db_sess = db_session.create_session()
-        file = form.cover.data
-        filename = secure_filename(file.filename)
-        save_path = os.path.join('static/images', filename)
-        file.save(save_path)
-        book = Book(
-            title=form.title.data,
-            author=form.author.data,
-            genre=form.genre.data,
-            age=form.age.data,
-            holder=current_user.id,
-            cover=f'images/{filename}'
-        )
-        db_sess.add(book)
-        db_sess.commit()
-        return redirect('/books')
+        try:
+            file = form.cover.data
+            filename = secure_filename(file.filename)
+            save_path = os.path.join('static/images', filename)
+            file.save(save_path)
+            book = Book(
+                title=form.title.data,
+                author=form.author.data,
+                genre=form.genre.data,
+                age=form.age.data,
+                holder=current_user.id,
+                cover=f'images/{filename}'
+            )
+            db_sess.add(book)
+            user = db_sess.query(User).filter(User.id == current_user.id).first()
+            if not user.books:
+                user.books = str(book.id)
+            else:
+                user.books += f', {book.id}'
+            db_sess.commit()
+
+            return redirect('/books')
+        finally:
+            db_sess.close()
     return render_template('add_book.html', form=form)
 
 
@@ -145,18 +154,24 @@ def add_book():
 @login_required
 def delete_book(book_id):
     db_sess = db_session.create_session()
-    book = db_sess.query(Book).filter(Book.id == book_id, Book.holder == current_user.id).first()
-    if book:
-        if book.cover and os.path.exists(os.path.join('static', book.cover)):
-            os.remove(os.path.join('static', book.cover))
+    try:
+        book = db_sess.query(Book).filter(Book.id == book_id, Book.holder == current_user.id).first()
+        rels = db_sess.query(Relationship).filter(Relationship.book == book_id).all()
+        for rel in rels:
+            db_sess.delete(rel)
+        if book:
+            if book.cover and os.path.exists(os.path.join('static', book.cover)):
+                os.remove(os.path.join('static', book.cover))
 
-        db_sess.delete(book)
-        db_sess.commit()
-        flash('Книга успешно удалена', 'success')
-    else:
-        flash('Книга не найдена или у вас нет прав на её удаление', 'danger')
+            db_sess.delete(book)
+            db_sess.commit()
+            flash('Книга успешно удалена', 'success')
+        else:
+            flash('Книга не найдена или у вас нет прав на её удаление', 'danger')
 
-    return redirect(url_for('profile'))
+        return redirect(url_for('profile'))
+    finally:
+        db_sess.close()
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -288,6 +303,94 @@ def refuse_book(book_id, taker_id):
         return redirect('/check_take')
     finally:
         sess.close()
+
+
+@app.route('/api/books', methods=['GET'])
+@login_required
+def api_get_books():
+    db_sess = db_session.create_session()
+
+    genre = request.args.get('genre')
+    author = request.args.get('author')
+
+    query = db_sess.query(Book).filter(Book.holder != current_user.id)
+
+    if genre:
+        query = query.filter(Book.genre == genre)
+    if author:
+        query = query.filter(Book.author.ilike(f'%{author}%'))
+
+    books = query.all()
+
+    result = []
+    for book in books:
+        owner = db_sess.query(User).get(book.holder)
+        result.append({
+            'id': book.id,
+            'title': book.title,
+            'author': book.author,
+            'genre': book.genre,
+            'age_rating': book.age,
+            'cover_url': url_for('static', filename=book.cover, _external=True),
+            'owner': {
+                'email': owner.email,
+                'name': f'{owner.name} {owner.surname}'
+            }
+        })
+
+    return jsonify({'books': result})
+
+
+@app.route('/api/books/<int:book_id>', methods=['GET'])
+@login_required
+def api_get_book(book_id):
+    db_sess = db_session.create_session()
+    book = db_sess.query(Book).get(book_id)
+
+    if not book:
+        return jsonify({'error': 'Book not found'}), 404
+
+    owner = db_sess.query(User).get(book.holder)
+
+    return jsonify({
+        'book': {
+            'id': book.id,
+            'title': book.title,
+            'author': book.author,
+            'genre': book.genre,
+            'cover_url': url_for('static', filename=book.cover, _external=True),
+            'owner': {
+                'email': owner.email,
+                'name': f'{owner.name} {owner.surname}'
+            }
+        }
+    })
+
+
+@app.route('/api/books/search', methods=['GET'])
+@login_required
+def api_search_books():
+    db_sess = db_session.create_session()
+    search_term = request.args.get('q')
+
+    if not search_term:
+        return jsonify({'error': 'Search term is required'}), 400
+
+    books = db_sess.query(Book).filter(
+        Book.holder != current_user.id,
+        (Book.title.ilike(f'%{search_term}%') |
+         (Book.author.ilike(f'%{search_term}%'))
+         ).limit(20).all())
+
+    return jsonify({
+        'books': [{
+            'id': book.id,
+            'title': book.title,
+            'author': book.author,
+            'genre': book.genre,
+            'cover_url': url_for('static', filename=book.cover, _external=True)
+        } for book in books]
+    })
 
 
 if __name__ == '__main__':
