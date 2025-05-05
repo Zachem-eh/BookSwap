@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, flash, url_for
+from flask import Flask, render_template, request, flash, url_for, jsonify
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, SelectField, FileField, IntegerField
 from wtforms.fields.simple import EmailField, BooleanField
@@ -306,14 +306,13 @@ def refuse_book(book_id, taker_id):
 
 
 @app.route('/api/books', methods=['GET'])
-@login_required
 def api_get_books():
     db_sess = db_session.create_session()
 
     genre = request.args.get('genre')
     author = request.args.get('author')
 
-    query = db_sess.query(Book).filter(Book.holder != current_user.id)
+    query = db_sess.query(Book)
 
     if genre:
         query = query.filter(Book.genre == genre)
@@ -342,7 +341,6 @@ def api_get_books():
 
 
 @app.route('/api/books/<int:book_id>', methods=['GET'])
-@login_required
 def api_get_book(book_id):
     db_sess = db_session.create_session()
     book = db_sess.query(Book).get(book_id)
@@ -364,32 +362,6 @@ def api_get_book(book_id):
                 'name': f'{owner.name} {owner.surname}'
             }
         }
-    })
-
-
-@app.route('/api/books/search', methods=['GET'])
-@login_required
-def api_search_books():
-    db_sess = db_session.create_session()
-    search_term = request.args.get('q')
-
-    if not search_term:
-        return jsonify({'error': 'Search term is required'}), 400
-
-    books = db_sess.query(Book).filter(
-        Book.holder != current_user.id,
-        (Book.title.ilike(f'%{search_term}%') |
-         (Book.author.ilike(f'%{search_term}%'))
-         ).limit(20).all())
-
-    return jsonify({
-        'books': [{
-            'id': book.id,
-            'title': book.title,
-            'author': book.author,
-            'genre': book.genre,
-            'cover_url': url_for('static', filename=book.cover, _external=True)
-        } for book in books]
     })
 
 
