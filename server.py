@@ -98,55 +98,11 @@ def register():
     return render_template('register.html', form=form)
 
 
-@app.route('/books')
-@login_required
-def books():
-    db_sess = db_session.create_session()
-    try:
-        genre_filter = request.args.get('genre')
+# books
 
-        if genre_filter:
-            all_books = db_sess.query(Book).filter(Book.genre == genre_filter).all()
-        else:
-            all_books = db_sess.query(Book).all()
+# add_book
 
-        genres = db_sess.query(Book.genre).distinct().all()
-        genres = [g[0] for g in genres]
-        return render_template('books.html', books=all_books, genres=genres, selected_genre=genre_filter)
-    finally:
-        db_sess.close()
-
-@app.route('/add_book', methods=['GET', 'POST'])
-@login_required
-def add_book():
-    form = BookForm()
-    if form.validate_on_submit():
-        db_sess = db_session.create_session()
-        try:
-            file = form.cover.data
-            filename = secure_filename(file.filename)
-            save_path = os.path.join('static/images', filename)
-            file.save(save_path)
-            book = Book(
-                title=form.title.data,
-                author=form.author.data,
-                genre=form.genre.data,
-                age=form.age.data,
-                holder=current_user.id,
-                cover=f'images/{filename}'
-            )
-            db_sess.add(book)
-            user = db_sess.query(User).filter(User.id == current_user.id).first()
-            if not user.books:
-                user.books = str(book.id)
-            else:
-                user.books += f', {book.id}'
-            db_sess.commit()
-
-            return redirect('/books')
-        finally:
-            db_sess.close()
-    return render_template('add_book.html', form=form)
+# delete_book
 
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -190,30 +146,6 @@ def profile():
         return render_template('profile.html', books=curr_books)
     finally:
         sess.close()
-
-
-@app.route('/delete_book/<int:book_id>', methods=['POST'])
-@login_required
-def delete_book(book_id):
-    db_sess = db_session.create_session()
-    try:
-        book = db_sess.query(Book).filter(Book.id == book_id, Book.holder == current_user.id).first()
-        rels = db_sess.query(Relationship).filter(Relationship.book == book_id).all()
-        for rel in rels:
-            db_sess.delete(rel)
-        if book:
-            if book.cover and os.path.exists(os.path.join('static', book.cover)):
-                os.remove(os.path.join('static', book.cover))
-
-            db_sess.delete(book)
-            db_sess.commit()
-            flash('Книга успешно удалена', 'success')
-        else:
-            flash('Книга не найдена или у вас нет прав на её удаление', 'danger')
-
-        return redirect(url_for('profile'))
-    finally:
-        db_sess.close()
 
 
 @app.route('/take_book/<int:book_id>', methods=['POST'])
