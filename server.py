@@ -98,11 +98,65 @@ def register():
     return render_template('register.html', form=form)
 
 
-# books
+@app.route('/books')
+@login_required
+def books():
+    db_sess = db_session.create_session()
+    genre_filter = request.args.get('genre')
 
-# add_book
+    if genre_filter:
+        all_books = db_sess.query(Book).filter(Book.genre == genre_filter).all()
+    else:
+        all_books = db_sess.query(Book).all()
 
-# delete_book
+    genres = db_sess.query(Book.genre).distinct().all()
+    genres = [g[0] for g in genres]
+
+    return render_template('books.html', books=all_books, genres=genres, selected_genre=genre_filter)
+    finally:
+        db_sess.close()
+
+
+@app.route('/add_book', methods=['GET', 'POST'])
+@login_required
+def add_book():
+    form = BookForm()
+    if form.validate_on_submit():
+        db_sess = db_session.create_session()
+        file = form.cover.data
+        filename = secure_filename(file.filename)
+        save_path = os.path.join('static/images', filename)
+        file.save(save_path)
+        book = Book(
+            title=form.title.data,
+            author=form.author.data,
+            genre=form.genre.data,
+            age=form.age.data,
+            holder=current_user.id,
+            cover=f'images/{filename}'
+        )
+        db_sess.add(book)
+        db_sess.commit()
+        return redirect('/books')
+    return render_template('add_book.html', form=form)
+
+
+@app.route('/delete_book/<int:book_id>', methods=['POST'])
+@login_required
+def delete_book(book_id):
+    db_sess = db_session.create_session()
+    book = db_sess.query(Book).filter(Book.id == book_id, Book.holder == current_user.id).first()
+    if book:
+        if book.cover and os.path.exists(os.path.join('static', book.cover)):
+            os.remove(os.path.join('static', book.cover))
+
+        db_sess.delete(book)
+        db_sess.commit()
+        flash('Книга успешно удалена', 'success')
+    else:
+        flash('Книга не найдена или у вас нет прав на её удаление', 'danger')
+
+    return redirect(url_for('profile'))
 
 
 @app.route('/login', methods=['GET', 'POST'])
