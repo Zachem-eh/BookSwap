@@ -246,7 +246,6 @@ def check_take():
         if relationships:
             flag_rl = True
         taker_dict = dict()
-        print(flag_rl)
         for relationship in relationships:
             taker = sess.query(User).filter(User.id == relationship.taker).first()
             book_take = sess.query(Book).filter(Book.id == relationship.book).first()
@@ -277,7 +276,7 @@ def replace_book(book_id, taker_id):
         ind = holder_books.index(book_replace.id)
         del holder_books[ind]
         holder_books = ', '.join([str(x) for x in holder_books])
-        holder.books == holder_books
+        holder.books = holder_books
 
         if not taker.books:
             taker.books = str(book_replace.id)
