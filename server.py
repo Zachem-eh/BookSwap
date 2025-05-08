@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, flash, url_for, jsonify
+from flask_restful import Api
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, SelectField, FileField, IntegerField
 from wtforms.fields.simple import EmailField, BooleanField
@@ -11,12 +12,17 @@ from data.relationships import Relationship
 from flask_login import LoginManager, login_user, login_required, logout_user, current_user
 from werkzeug.utils import secure_filename
 import os
+from user_resourse import UserResource, UserListResource
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yandexlyceum'
 
 login_manager = LoginManager()
 login_manager.init_app(app)
+
+api = Api(app)
+api.add_resource(UserResource, '/api/users/<int:user_id>')
+api.add_resource(UserListResource, '/api/users')
 
 
 @login_manager.user_loader
