@@ -1,11 +1,11 @@
 from flask_restful import Resource, reqparse
 from data.books import Book
-from flask import jsonify
+from flask import jsonify, make_response
 from flask import request
 import os
 from werkzeug.utils import secure_filename
 from data.db_session import create_session
-from server import allowed_file
+from utils import allowed_file
 
 book_parser = reqparse.RequestParser()
 book_parser.add_argument('holder', type=int, required=True, help='holder (user ID) is required')
@@ -22,11 +22,11 @@ class BookResource(Resource):
         if book_id:
             book = session.get(Book, book_id)
             if book:
-                return jsonify(book.to_dict())
-            return {'message': 'Book not found'}, 404
+                return jsonify(book.to_dict(only=('id', 'holder', 'author', 'title', 'genre', 'age', 'cover')))
+            return make_response({'message': 'Book not found'}, 404)
         else:
             books = session.query(Book).all()
-            return jsonify([book.to_dict() for book in books])
+            return jsonify([book.to_dict(only=('id', 'holder', 'author', 'title', 'genre', 'age', 'cover')) for book in books])
 
     def post(self):
         args = book_parser.parse_args()
@@ -43,30 +43,30 @@ class BookResource(Resource):
 
         session.add(book)
         session.commit()
-        return jsonify(book.to_dict())
+        return jsonify(book.to_dict(only=('id', 'holder', 'author', 'title', 'genre', 'age', 'cover')))
 
     def put(self, book_id):
         session = create_session()
         book = session.get(Book, book_id)
         if not book:
-            return {'message': 'Book not found'}, 404
+            return make_response({'message': 'Book not found'}, 404)
 
         args = book_parser.parse_args()
         for key, value in args.items():
             setattr(book, key, value)
 
         session.commit()
-        return jsonify(book.to_dict())
+        return jsonify(book.to_dict(only=('id', 'holder', 'author', 'title', 'genre', 'age', 'cover')))
 
     def delete(self, book_id):
         session = create_session()
         book = session.get(Book, book_id)
         if not book:
-            return {'message': 'Book not found'}, 404
+            return make_response({'message': 'Book not found'}, 404)
 
         session.delete(book)
         session.commit()
-        return {'message': 'Book deleted successfully'}
+        return jsonify({'message': 'Book deleted successfully'})
 
 
 class BookCoverUpload(Resource):
@@ -74,14 +74,14 @@ class BookCoverUpload(Resource):
         session = create_session()
         book = session.get(Book, book_id)
         if not book:
-            return {'message': 'Book not found'}, 404
+            return make_response({'message': 'Book not found'}, 404)
 
         if 'cover' not in request.files:
-            return {'message': 'No file part in request'}, 400
+            return make_response({'message': 'No file part in request'}, 400)
 
         file = request.files['cover']
         if file.filename == '':
-            return {'message': 'No file selected'}, 400
+            return make_response({'message': 'No file selected'}, 400)
 
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
@@ -90,6 +90,6 @@ class BookCoverUpload(Resource):
             file.save(filepath)
             book.cover = filepath
             session.commit()
-            return {'message': 'Cover uploaded', 'cover_path': filepath}
+            return jsonify({'message': 'Cover uploaded', 'cover_path': filepath})
 
-        return {'message': 'Invalid file type'}, 400
+        return make_response({'message': 'Invalid file type'}, 400)

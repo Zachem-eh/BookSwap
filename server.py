@@ -29,13 +29,7 @@ api.add_resource(BookResource, '/api/books', '/api/books/<int:book_id>')
 api.add_resource(BookCoverUpload, '/api/books/<int:book_id>/upload_cover')
 
 UPLOAD_FOLDER = 'static/covers'
-ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
-
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1).lower in ALLOWED_EXTENSIONS
 
 
 @login_manager.user_loader
@@ -83,7 +77,7 @@ class BookForm(FlaskForm):
     ], validators=[DataRequired()])
     cover = FileField('Выберите изображение',
                       validators=[DataRequired()],
-                      render_kw={'accept': 'static/covers/*'})
+                      render_kw={'accept': 'image/*'})
     submit = SubmitField('Добавить книгу')
 
 
@@ -351,66 +345,6 @@ def redactor(book_id):
         return render_template('redactor.html', form=form, book_id=book_id)
     finally:
         sess.close()
-
-
-@app.route('/api/books', methods=['GET'])
-def api_get_books():
-    db_sess = db_session.create_session()
-
-    genre = request.args.get('genre')
-    author = request.args.get('author')
-
-    query = db_sess.query(Book)
-
-    if genre:
-        query = query.filter(Book.genre == genre)
-    if author:
-        query = query.filter(Book.author.ilike(f'%{author}%'))
-
-    books = query.all()
-
-    result = []
-    for book in books:
-        owner = db_sess.query(User).get(book.holder)
-        result.append({
-            'id': book.id,
-            'title': book.title,
-            'author': book.author,
-            'genre': book.genre,
-            'age_rating': book.age,
-            'cover_url': url_for('static', filename=book.cover, _external=True),
-            'owner': {
-                'email': owner.email,
-                'name': f'{owner.name} {owner.surname}'
-            }
-        })
-
-    return jsonify({'books': result})
-
-
-@app.route('/api/books/<int:book_id>', methods=['GET'])
-def api_get_book(book_id):
-    db_sess = db_session.create_session()
-    book = db_sess.query(Book).get(book_id)
-
-    if not book:
-        return jsonify({'error': 'Book not found'}), 404
-
-    owner = db_sess.query(User).get(book.holder)
-
-    return jsonify({
-        'book': {
-            'id': book.id,
-            'title': book.title,
-            'author': book.author,
-            'genre': book.genre,
-            'cover_url': url_for('static', filename=book.cover, _external=True),
-            'owner': {
-                'email': owner.email,
-                'name': f'{owner.name} {owner.surname}'
-            }
-        }
-    })
 
 
 if __name__ == '__main__':
