@@ -32,13 +32,13 @@ def load_user(user_id):
 
 
 class RegisterForm(FlaskForm):
-    email = EmailField('Ваш email')
-    password = PasswordField('Пароль')
-    repeat_password = PasswordField('Подтвердите пароль')
-    surname = StringField('Фамилия')
-    name = StringField('Имя')
-    age = IntegerField('Возраст')
-    submit = SubmitField('Зарегистрироваться')
+    email = EmailField('Ваш email', validators=[DataRequired()])
+    password = PasswordField('Пароль', validators=[DataRequired()])
+    repeat_password = PasswordField('Подтвердите пароль', validators=[DataRequired()])
+    surname = StringField('Фамилия', validators=[DataRequired()])
+    name = StringField('Имя', validators=[DataRequired()])
+    age = IntegerField('Возраст', validators=[DataRequired()])
+    submit = SubmitField('Зарегистрироваться', validators=[DataRequired()])
 
 
 class LoginForm(FlaskForm):
