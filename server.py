@@ -74,6 +74,10 @@ class BookForm(FlaskForm):
     submit = SubmitField('Добавить книгу')
 
 
+class BookFormRedactor(BookForm):
+    cover = FileField('Выберите изображение (необязательно)', render_kw={'accept': 'image/*'})
+
+
 @app.route('/')
 def home():
     return render_template('index.html')
@@ -306,6 +310,38 @@ def refuse_book(book_id, taker_id):
             sess.delete(rel)
         sess.commit()
         return redirect('/check_take')
+    finally:
+        sess.close()
+
+
+@app.route('/redactor/<int:book_id>', methods=['GET', 'POST'])
+@login_required
+def redactor(book_id):
+    sess = db_session.create_session()
+    try:
+        form = BookFormRedactor()
+        curr_book = sess.query(Book).filter(Book.id == book_id).first()
+        if form.validate_on_submit():
+            file = form.cover.data
+            if file:
+                filename = secure_filename(file.filename)
+                save_path = os.path.join('static/images', filename)
+                if curr_book.cover and os.path.exists(os.path.join('static', curr_book.cover)):
+                    os.remove(os.path.join('static', curr_book.cover))
+                file.save(save_path)
+                curr_book.cover = f'images/{filename}'
+            curr_book.title = form.title.data
+            curr_book.author = form.author.data
+            curr_book.genre = form.genre.data
+            curr_book.age = form.age.data
+            sess.commit()
+            return redirect('/books')
+
+        form.title.data = curr_book.title
+        form.author.data = curr_book.author
+        form.genre.data = curr_book.genre
+        form.age.data = curr_book.age
+        return render_template('redactor.html', form=form, book_id=book_id)
     finally:
         sess.close()
 
