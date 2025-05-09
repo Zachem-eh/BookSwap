@@ -13,6 +13,8 @@ from flask_login import LoginManager, login_user, login_required, logout_user, c
 from werkzeug.utils import secure_filename
 import os
 from user_resourse import UserResource, UserListResource
+from book_resource import BookResource, BookCoverUpload
+
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yandexlyceum'
@@ -23,6 +25,17 @@ login_manager.init_app(app)
 api = Api(app)
 api.add_resource(UserResource, '/api/users/<int:user_id>')
 api.add_resource(UserListResource, '/api/users')
+api.add_resource(BookResource, '/api/books', '/api/books/<int:book_id>')
+api.add_resource(BookCoverUpload, '/api/books/<int:book_id>/upload_cover')
+
+UPLOAD_FOLDER = 'static/covers'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
+
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1).lower in ALLOWED_EXTENSIONS
 
 
 @login_manager.user_loader
@@ -69,8 +82,8 @@ class BookForm(FlaskForm):
         ('18+', '18+')
     ], validators=[DataRequired()])
     cover = FileField('Выберите изображение',
-                     validators=[DataRequired()],
-                     render_kw={'accept': 'image/*'})
+                      validators=[DataRequired()],
+                      render_kw={'accept': 'static/covers/*'})
     submit = SubmitField('Добавить книгу')
 
 
