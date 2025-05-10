@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, flash, url_for, jsonify
+from flask import Flask, render_template, request, flash, url_for
 from flask_restful import Api
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, SubmitField, SelectField, FileField, IntegerField
@@ -13,7 +13,7 @@ from flask_login import LoginManager, login_user, login_required, logout_user, c
 from werkzeug.utils import secure_filename
 import os
 from user_resourse import UserResource, UserListResource
-from book_resource import BookResource, BookCoverUpload
+from book_resource import BookResource
 import uuid
 
 
@@ -27,7 +27,6 @@ api = Api(app)
 api.add_resource(UserResource, '/api/users/<int:user_id>')
 api.add_resource(UserListResource, '/api/users')
 api.add_resource(BookResource, '/api/books', '/api/books/<int:book_id>')
-api.add_resource(BookCoverUpload, '/api/books/<int:book_id>/upload_cover')
 
 UPLOAD_FOLDER = 'static/covers'
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
@@ -175,10 +174,17 @@ def delete_book(book_id):
     db_sess = db_session.create_session()
     try:
         book = db_sess.query(Book).filter(Book.id == book_id, Book.holder == current_user.id).first()
-        rels = db_sess.query(Relationship).filter(Relationship.book == book_id).delete()
+        db_sess.query(Relationship).filter(Relationship.book == book_id).delete()
         if book:
             if book.cover and os.path.exists(os.path.join('static', book.cover)):
                 os.remove(os.path.join('static', book.cover))
+
+            holder = db_sess.query(User).filter(User.id == book.holder).first()
+            holder_books = [int(x) for x in holder.books.split(', ')]
+            ind = holder_books.index(book.id)
+            del holder_books[ind]
+            holder_books = ', '.join([str(x) for x in holder_books])
+            holder.books = holder_books
 
             db_sess.delete(book)
             db_sess.commit()
