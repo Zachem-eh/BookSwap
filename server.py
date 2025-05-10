@@ -14,6 +14,7 @@ from werkzeug.utils import secure_filename
 import os
 from user_resourse import UserResource, UserListResource
 from book_resource import BookResource, BookCoverUpload
+import uuid
 
 
 app = Flask(__name__)
@@ -143,6 +144,7 @@ def add_book():
         try:
             file = form.cover.data
             filename = secure_filename(file.filename)
+            filename = f"{uuid.uuid4().hex}_{filename}"
             save_path = os.path.join('static/images', filename)
             file.save(save_path)
             book = Book(
@@ -326,6 +328,7 @@ def redactor(book_id):
             file = form.cover.data
             if file:
                 filename = secure_filename(file.filename)
+                filename = f"{uuid.uuid4().hex}_{filename}"
                 save_path = os.path.join('static/images', filename)
                 if curr_book.cover and os.path.exists(os.path.join('static', curr_book.cover)):
                     os.remove(os.path.join('static', curr_book.cover))
