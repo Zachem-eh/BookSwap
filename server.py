@@ -13,7 +13,7 @@ from flask_login import LoginManager, login_user, login_required, logout_user, c
 from werkzeug.utils import secure_filename
 import os
 from user_resourse import UserResource, UserListResource
-from book_resource import BookResource
+from book_resource import BookResource, BookListResource
 import uuid
 
 
@@ -26,10 +26,8 @@ login_manager.init_app(app)
 api = Api(app)
 api.add_resource(UserResource, '/api/users/<int:user_id>')
 api.add_resource(UserListResource, '/api/users')
-api.add_resource(BookResource, '/api/books', '/api/books/<int:book_id>')
-
-UPLOAD_FOLDER = 'static/covers'
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+api.add_resource(BookResource,'/api/books/<int:book_id>')
+api.add_resource(BookListResource, '/api/books')
 
 
 @login_manager.user_loader
