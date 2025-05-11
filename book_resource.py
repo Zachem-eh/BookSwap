@@ -41,7 +41,7 @@ class BookResource(Resource):
             if not book:
                 return make_response({'message': 'Book not found'}, 404)
 
-            required_fields = ['holder', 'author', 'title', 'genre', 'age', 'cover']
+            required_fields = ['holder', 'author', 'title', 'genre', 'age', 'cover', 'data']
             if all(args[field] is None for field in required_fields):
                 return make_response(jsonify({"error": "Missing required fields"}), 400)
 
